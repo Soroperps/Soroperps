@@ -5,6 +5,8 @@ members = [
     "contracts/vault",
     "contracts/oracle-adapter",
     "contracts/position-manager",
+    "contracts/liquidation-engine",
+    "contracts/funding-rate",
 ]
 
 [workspace.package]
@@ -17,6 +19,7 @@ soroban-sdk = "22.0.0"
 perps-types = { path = "contracts/perps-types" }
 perps-vault = { path = "contracts/vault" }
 perps-oracle-adapter = { path = "contracts/oracle-adapter" }
+perps-position-manager = { path = "contracts/position-manager" }
 
 [profile.release]
 opt-level = "z"
