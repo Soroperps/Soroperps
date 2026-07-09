@@ -7,6 +7,7 @@ members = [
     "contracts/position-manager",
     "contracts/liquidation-engine",
     "contracts/funding-rate",
+    "contracts/integration-tests",
 ]
 
 [workspace.package]
@@ -20,6 +21,8 @@ perps-types = { path = "contracts/perps-types" }
 perps-vault = { path = "contracts/vault" }
 perps-oracle-adapter = { path = "contracts/oracle-adapter" }
 perps-position-manager = { path = "contracts/position-manager" }
+perps-liquidation-engine = { path = "contracts/liquidation-engine" }
+perps-funding-rate = { path = "contracts/funding-rate" }
 
 [profile.release]
 opt-level = "z"

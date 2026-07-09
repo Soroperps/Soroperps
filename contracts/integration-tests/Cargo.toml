@@ -1,0 +1,13 @@
+[package]
+name = "perps-integration-tests"
+version.workspace = true
+edition.workspace = true
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+perps-types = { workspace = true }
+perps-vault = { workspace = true }
+perps-oracle-adapter = { workspace = true }
+perps-position-manager = { workspace = true }
+perps-liquidation-engine = { workspace = true }
+perps-funding-rate = { workspace = true }
