@@ -1,0 +1,4 @@
+target/
+*.wasm
+.soroban/
+.DS_Store
