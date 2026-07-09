@@ -1,0 +1,16 @@
+[package]
+name = "perps-position-manager"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+perps-types = { workspace = true }
+perps-vault = { workspace = true }
+perps-oracle-adapter = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }

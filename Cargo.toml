@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "contracts/perps-types",
     "contracts/vault",
+    "contracts/oracle-adapter",
+    "contracts/position-manager",
 ]
 
 [workspace.package]
@@ -13,6 +15,8 @@ rust-version = "1.81.0"
 [workspace.dependencies]
 soroban-sdk = "22.0.0"
 perps-types = { path = "contracts/perps-types" }
+perps-vault = { path = "contracts/vault" }
+perps-oracle-adapter = { path = "contracts/oracle-adapter" }
 
 [profile.release]
 opt-level = "z"

@@ -24,7 +24,7 @@ pub enum VaultKey {
 // ---------------------------------------------------------------------------
 
 #[contracttype]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum Direction {
     Long = 0,

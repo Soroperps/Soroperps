@@ -330,6 +330,52 @@ impl VaultContract {
         Ok(())
     }
 
+    /// Settle a closed position: unlock liquidity, adjust PnL, collect fee, return funds to trader.
+    /// Called by position manager when closing/liquidating a position.
+    ///
+    /// - `position_size`: notional size to unlock
+    /// - `collateral`: original margin posted
+    /// - `pnl`: price PnL (positive = trader wins)
+    /// - `fee`: trading fee to collect for LPs
+    /// - `trader`: who to return remaining funds to
+    pub fn close_position_settlement(
+        env: Env,
+        caller: Address,
+        trader: Address,
+        position_size: i128,
+        collateral: i128,
+        pnl: i128,
+        fee: i128,
+    ) -> Result<(), PerpsError> {
+        storage::bump_instance(&env);
+        Self::require_position_manager(&env, &caller)?;
+
+        // 1. Unlock liquidity
+        let locked = storage::get_locked_liquidity(&env);
+        storage::set_locked_liquidity(&env, locked - position_size);
+
+        // 2. Adjust pool deposits for PnL
+        let total_deposits = storage::get_total_deposits(&env);
+        // If trader wins (pnl > 0): pool loses that amount
+        // If trader loses (pnl < 0): pool gains that amount
+        // Fee always goes to pool
+        let new_deposits = total_deposits - pnl + fee;
+        storage::set_total_deposits(&env, new_deposits);
+
+        // 3. Calculate payout to trader: collateral + pnl - fee
+        let payout = collateral + pnl - fee;
+        if payout > 0 {
+            let usdc = storage::get_usdc_token(&env);
+            let token_client = token::TokenClient::new(&env, &usdc);
+            token_client.transfer(&env.current_contract_address(), &trader, &payout);
+        }
+
+        events::emit_pnl_settled(&env, trader, pnl);
+        events::emit_fee_collected(&env, fee);
+
+        Ok(())
+    }
+
     /// Collect trading fee. Only callable by position manager.
     /// Fee USDC has already been transferred to the vault.
     pub fn collect_fee(env: Env, caller: Address, amount: i128) -> Result<(), PerpsError> {
