@@ -898,6 +898,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "perps-integration-tests"
+version = "0.1.0"
+dependencies = [
+ "perps-funding-rate",
+ "perps-liquidation-engine",
+ "perps-oracle-adapter",
+ "perps-position-manager",
+ "perps-types",
+ "perps-vault",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "perps-liquidation-engine"
 version = "0.1.0"
 dependencies = [
