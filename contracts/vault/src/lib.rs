@@ -350,9 +350,13 @@ impl VaultContract {
         storage::bump_instance(&env);
         Self::require_position_manager(&env, &caller)?;
 
-        // 1. Unlock liquidity
+        // 1. Unlock liquidity (guard against underflow)
         let locked = storage::get_locked_liquidity(&env);
-        storage::set_locked_liquidity(&env, locked - position_size);
+        let new_locked = locked - position_size;
+        if new_locked < 0 {
+            return Err(PerpsError::OverflowError);
+        }
+        storage::set_locked_liquidity(&env, new_locked);
 
         // 2. Adjust pool deposits for PnL
         let total_deposits = storage::get_total_deposits(&env);
@@ -360,6 +364,9 @@ impl VaultContract {
         // If trader loses (pnl < 0): pool gains that amount
         // Fee always goes to pool
         let new_deposits = total_deposits - pnl + fee;
+        if new_deposits < 0 {
+            return Err(PerpsError::InsufficientLiquidity);
+        }
         storage::set_total_deposits(&env, new_deposits);
 
         // 3. Calculate payout to trader: collateral + pnl - fee

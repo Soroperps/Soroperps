@@ -1,4 +1,4 @@
-use soroban_sdk::testutils::Address as _;
+use soroban_sdk::{testutils::Address as _, Address};
 
 use perps_types::Direction;
 
@@ -316,4 +316,224 @@ fn test_sequential_open_close_positions() {
         &5_u32,
     );
     assert_eq!(next_pos, 6);
+}
+
+// ---------------------------------------------------------------------------
+// Edge case fixes — regression tests for audit findings
+// ---------------------------------------------------------------------------
+
+/// #20: Close position with wrong asset should fail (AssetMismatch).
+#[test]
+#[should_panic(expected = "Error(Contract, #17)")]
+fn test_close_position_wrong_asset() {
+    let h = TestHarness::setup();
+    h.add_liquidity(100_000_0000000);
+    h.set_price(0, 1_000_0000000);
+    h.set_price(1, 50_000_0000000);
+
+    let trader = h.create_trader(500_0000000);
+
+    // Open on asset 0
+    let pos_id = h.pm.open_position(
+        &trader,
+        &0_u32,
+        &Direction::Long,
+        &100_0000000_i128,
+        &10_u32,
+    );
+
+    // Try to close with asset 1 — should fail with AssetMismatch (#17)
+    h.pm.close_position(&trader, &pos_id, &1_u32);
+}
+
+/// #3: PnL capped at collateral — vault accounting stays consistent
+/// when loss exceeds collateral (>100% loss scenario).
+#[test]
+fn test_loss_capped_at_collateral() {
+    let h = TestHarness::setup();
+    h.add_liquidity(100_000_0000000);
+    h.set_price(0, 1_000_0000000);
+
+    let trader = h.create_trader(500_0000000);
+
+    // 100 USDC at 10x = 1000 notional long
+    let pos_id = h.pm.open_position(
+        &trader,
+        &0_u32,
+        &Direction::Long,
+        &100_0000000_i128,
+        &10_u32,
+    );
+
+    // Price drops 50%: raw PnL = 1000 * -0.50 = -500, but collateral = 100
+    // PnL should be capped at -100
+    h.set_price(0, 500_0000000);
+
+    let pnl = h.pm.close_position(&trader, &pos_id, &0_u32);
+    // Capped PnL = -100, fee = 1, net = -101
+    assert_eq!(pnl, -101_0000000);
+
+    // Trader payout: collateral + capped_pnl - fee = 100 + (-100) - 1 = -1 → 0 (no payout)
+    // Vault total_deposits should NOT be inflated beyond actual balance
+    let vault_deposits = h.vault.get_total_deposits();
+    let vault_locked = h.vault.get_locked_liquidity();
+
+    // After open: total_deposits = 100000 + 1(open_fee via collect_fee) = 100001
+    // After close: new_deposits = 100001 - (-100)(capped PnL) + 1(close_fee) = 100102
+    assert_eq!(vault_deposits, 100_102_0000000);
+    assert_eq!(vault_locked, 0);
+}
+
+/// #10: Fee rates cannot be set beyond 10% (1000 bps) post-init.
+#[test]
+#[should_panic(expected = "Error(Contract, #12)")]
+fn test_set_fee_rates_too_high() {
+    let h = TestHarness::setup();
+
+    // Try to set 100% open fee — should fail with InvalidConfig
+    h.pm.set_fee_rates(&h.admin, &10000_u32, &10_u32);
+}
+
+/// #18: High-leverage position born at low margin ratio.
+/// With 30x leverage, initial margin = collateral/size = 1/30 = 333 bps < 500 bps maintenance.
+/// This means the position is immediately liquidatable.
+#[test]
+fn test_high_leverage_immediately_liquidatable() {
+    let h = TestHarness::setup();
+    h.add_liquidity(100_000_0000000);
+    h.set_price(0, 1_000_0000000);
+
+    let trader = h.create_trader(500_0000000);
+
+    // Open at 30x leverage
+    h.pm.open_position(
+        &trader,
+        &0_u32,
+        &Direction::Long,
+        &100_0000000_i128,
+        &30_u32,
+    );
+
+    // Margin ratio at opening = 100 * 10000 / 3000 = 333 bps < 500 bps maintenance
+    let ratio = h.le.get_margin_ratio(&trader, &1_u64, &0_u32);
+    assert_eq!(ratio, 333);
+
+    // Position is immediately liquidatable — this is a known risk of max leverage
+    let is_liq = h.le.is_liquidatable(&trader, &1_u64, &0_u32);
+    assert!(is_liq);
+}
+
+/// #8: Share price inflation — first deposit is tiny, vault profits, second depositor blocked.
+#[test]
+fn test_share_price_inflation_small_first_deposit() {
+    let h = TestHarness::setup();
+
+    // First LP deposits 100 USDC (small but enough for a position)
+    let _lp1 = h.add_liquidity(100_0000000);
+    let initial_shares = h.vault.get_total_shares();
+    assert_eq!(initial_shares, 100_0000000);
+
+    // Simulate vault profit: trader opens and closes at a loss
+    h.set_price(0, 1_000_0000000);
+    let trader = h.create_trader(200_0000000);
+    h.pm.open_position(
+        &trader, &0_u32, &Direction::Long, &10_0000000_i128, &5_u32,
+    );
+    h.set_price(0, 900_0000000); // -10% drop
+    h.pm.close_position(&trader, &1_u64, &0_u32);
+
+    // Vault profited from trader loss — share price should be > 1.0
+    let share_price = h.vault.get_share_price();
+    assert!(share_price > 10_000_000); // > 1.0 (7 decimals)
+
+    // Second LP deposits 1 USDC — should still get some shares
+    let lp2 = h.add_liquidity(1_0000000);
+    let lp2_shares = h.vault.get_share_balance(&lp2);
+    assert!(lp2_shares > 0);
+}
+
+/// Position stores asset — verify it's correctly recorded.
+#[test]
+fn test_position_stores_asset() {
+    let h = TestHarness::setup();
+    h.add_liquidity(100_000_0000000);
+    h.set_price(0, 1_000_0000000);
+    h.set_price(1, 50_000_0000000);
+
+    let trader = h.create_trader(1000_0000000);
+
+    let pos0 = h.pm.open_position(
+        &trader, &0_u32, &Direction::Long, &100_0000000_i128, &5_u32,
+    );
+    let pos1 = h.pm.open_position(
+        &trader, &1_u32, &Direction::Short, &100_0000000_i128, &5_u32,
+    );
+
+    let p0 = h.pm.get_position(&trader, &pos0);
+    let p1 = h.pm.get_position(&trader, &pos1);
+
+    assert_eq!(p0.asset, 0);
+    assert_eq!(p1.asset, 1);
+
+    // Can close with correct asset
+    h.pm.close_position(&trader, &pos0, &0_u32);
+    h.pm.close_position(&trader, &pos1, &1_u32);
+}
+
+/// Vault settlement guards — locked liquidity can't go negative.
+#[test]
+fn test_vault_deposits_stay_consistent_after_trades() {
+    let h = TestHarness::setup();
+    let lp = h.add_liquidity(10_000_0000000);
+    h.set_price(0, 1_000_0000000);
+
+    let trader = h.create_trader(500_0000000);
+
+    // Open and close several positions, verify vault is always consistent
+    for _ in 0..3 {
+        h.pm.open_position(
+            &trader, &0_u32, &Direction::Long, &50_0000000_i128, &5_u32,
+        );
+    }
+
+    // Close all at small profit
+    h.set_price(0, 1_010_0000000);
+    for i in 1..=3 {
+        h.pm.close_position(&trader, &(i as u64), &0_u32);
+    }
+
+    // Vault invariants
+    let locked = h.vault.get_locked_liquidity();
+    let deposits = h.vault.get_total_deposits();
+    assert_eq!(locked, 0);
+    assert!(deposits > 0);
+
+    // LP can withdraw everything
+    let shares = h.vault.get_share_balance(&lp);
+    let withdrawn = h.vault.withdraw(&lp, &shares);
+    assert!(withdrawn > 0);
+}
+
+/// Liquidation with asset mismatch should fail.
+#[test]
+#[should_panic]
+fn test_liquidate_wrong_asset() {
+    let h = TestHarness::setup();
+    h.add_liquidity(100_000_0000000);
+    h.set_price(0, 1_000_0000000);
+    h.set_price(1, 50_000_0000000);
+
+    let trader = h.create_trader(500_0000000);
+
+    // Open on asset 0
+    h.pm.open_position(
+        &trader, &0_u32, &Direction::Long, &100_0000000_i128, &10_u32,
+    );
+
+    // Make asset 1 crash (shouldn't affect asset 0 position)
+    h.set_price(1, 1_0000000);
+
+    // Try to liquidate with asset 1 — should fail (asset mismatch in PM)
+    let keeper = Address::generate(&h.env);
+    h.le.liquidate(&keeper, &trader, &1_u64, &1_u32);
 }

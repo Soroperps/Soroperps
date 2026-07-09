@@ -36,6 +36,7 @@ pub enum Direction {
 pub struct Position {
     pub id: u64,
     pub trader: Address,
+    pub asset: u32,
     pub direction: Direction,
     pub size: i128,
     pub collateral: i128,
@@ -150,6 +151,7 @@ pub enum PerpsError {
     ZeroShares = 14,
     MinCollateralNotMet = 15,
     FundingTooEarly = 16,
+    AssetMismatch = 17,
 }
 
 // ---------------------------------------------------------------------------

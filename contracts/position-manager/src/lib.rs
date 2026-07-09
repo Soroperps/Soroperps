@@ -142,6 +142,7 @@ impl PositionManagerContract {
         let position = Position {
             id: position_id,
             trader: trader.clone(),
+            asset,
             direction: direction.clone(),
             size,
             collateral,
@@ -199,23 +200,33 @@ impl PositionManagerContract {
             return Err(PerpsError::Unauthorized);
         }
 
+        // Validate asset matches the position's asset
+        if position.asset != asset {
+            return Err(PerpsError::AssetMismatch);
+        }
+
         // Get current price
         let oracle_addr = storage::get_oracle(&env);
         let oracle = OracleAdapterContractClient::new(&env, &oracle_addr);
         let current_price = oracle.get_price_value(&asset);
 
-        // Calculate PnL
-        let price_pnl = math::calculate_pnl(
+        // Calculate PnL — cap loss at collateral to prevent vault accounting inflation
+        let raw_pnl = math::calculate_pnl(
             &position.direction,
             position.size,
             position.entry_price,
             current_price,
         );
+        let price_pnl = if raw_pnl < -position.collateral {
+            -position.collateral
+        } else {
+            raw_pnl
+        };
 
         // Calculate close fee
         let close_fee = math::calculate_fee(position.size, storage::get_close_fee_rate(&env));
 
-        // Net PnL after fees (funding will be added in Phase 4)
+        // Net PnL after fees
         let net_pnl = price_pnl - close_fee;
 
         // Single vault call: unlock, adjust accounting, return funds to trader
@@ -311,18 +322,28 @@ impl PositionManagerContract {
         let position = storage::get_position(&env, &trader, position_id)
             .ok_or(PerpsError::PositionNotFound)?;
 
+        // Validate asset matches
+        if position.asset != asset {
+            return Err(PerpsError::AssetMismatch);
+        }
+
         // Get current price
         let oracle_addr = storage::get_oracle(&env);
         let oracle = OracleAdapterContractClient::new(&env, &oracle_addr);
         let current_price = oracle.get_price_value(&asset);
 
-        // Calculate PnL
-        let price_pnl = math::calculate_pnl(
+        // Calculate PnL — cap loss at collateral
+        let raw_pnl = math::calculate_pnl(
             &position.direction,
             position.size,
             position.entry_price,
             current_price,
         );
+        let price_pnl = if raw_pnl < -position.collateral {
+            -position.collateral
+        } else {
+            raw_pnl
+        };
 
         // Settlement: unlock liquidity, no fee on liquidation (penalty handled by liquidation engine)
         let vault_addr = storage::get_vault(&env);
@@ -391,6 +412,9 @@ impl PositionManagerContract {
         admin.require_auth();
         if admin != storage::get_admin(&env) {
             return Err(PerpsError::Unauthorized);
+        }
+        if open_bps > 1000 || close_bps > 1000 {
+            return Err(PerpsError::InvalidConfig);
         }
         storage::set_open_fee_rate(&env, open_bps);
         storage::set_close_fee_rate(&env, close_bps);
