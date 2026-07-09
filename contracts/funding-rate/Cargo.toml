@@ -1,0 +1,17 @@
+[package]
+name = "perps-funding-rate"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+perps-types = { workspace = true }
+perps-position-manager = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+perps-vault = { workspace = true }
+perps-oracle-adapter = { workspace = true }
