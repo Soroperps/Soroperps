@@ -923,6 +923,14 @@
                   "map": [
                     {
                       "key": {
+                        "symbol": "asset"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "collateral"
                       },
                       "val": {
@@ -1057,6 +1065,14 @@
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "asset"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "collateral"

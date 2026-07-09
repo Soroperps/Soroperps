@@ -132,7 +132,7 @@ fn test_balanced_oi_spread_only() {
     // long_rate = 0 + 5 = 5 (spread only)
     // short_rate = -(0 - 5) = 5 (spread only)
     let (long_rate, short_rate) = s.funding.get_current_rate();
-    assert_eq!(long_rate, 5);  // both sides pay the spread
+    assert_eq!(long_rate, 5); // both sides pay the spread
     assert_eq!(short_rate, 5);
 }
 
@@ -144,7 +144,7 @@ fn test_long_heavy_positive_rate() {
     let t1 = create_trader(&s, 500_0000000);
     let t2 = create_trader(&s, 500_0000000);
 
-    s.pm.open_position(&t1, &0_u32, &Direction::Long, &200_0000000_i128, &10_u32);  // 2000 notional
+    s.pm.open_position(&t1, &0_u32, &Direction::Long, &200_0000000_i128, &10_u32); // 2000 notional
     s.pm.open_position(&t2, &0_u32, &Direction::Short, &100_0000000_i128, &10_u32); // 1000 notional
 
     // skew = (2000 - 1000) * 10000 / 3000 = 3333 bps
@@ -163,7 +163,7 @@ fn test_short_heavy_negative_rate() {
     let t1 = create_trader(&s, 500_0000000);
     let t2 = create_trader(&s, 500_0000000);
 
-    s.pm.open_position(&t1, &0_u32, &Direction::Long, &100_0000000_i128, &10_u32);  // 1000
+    s.pm.open_position(&t1, &0_u32, &Direction::Long, &100_0000000_i128, &10_u32); // 1000
     s.pm.open_position(&t2, &0_u32, &Direction::Short, &200_0000000_i128, &10_u32); // 2000
 
     // skew = (1000 - 2000) * 10000 / 3000 = -3333 bps

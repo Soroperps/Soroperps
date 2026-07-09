@@ -61,9 +61,7 @@ pub fn set_funding(env: &Env, funding: &Address) {
 
 #[allow(dead_code)]
 pub fn get_funding(env: &Env) -> Option<Address> {
-    env.storage()
-        .instance()
-        .get(&PositionKey::FundingAddress)
+    env.storage().instance().get(&PositionKey::FundingAddress)
 }
 
 pub fn set_liquidation_engine(env: &Env, le: &Address) {
@@ -79,9 +77,7 @@ pub fn get_liquidation_engine(env: &Env) -> Option<Address> {
 }
 
 pub fn set_usdc_token(env: &Env, token: &Address) {
-    env.storage()
-        .instance()
-        .set(&PositionKey::UsdcToken, token);
+    env.storage().instance().set(&PositionKey::UsdcToken, token);
 }
 
 pub fn get_usdc_token(env: &Env) -> Address {

@@ -165,7 +165,7 @@ fn test_multiple_assets() {
     h.add_liquidity(100_000_0000000);
 
     // Set prices for two different assets
-    h.set_price(0, 1_000_0000000);  // Asset 0: $1.00
+    h.set_price(0, 1_000_0000000); // Asset 0: $1.00
     h.set_price(1, 50_000_0000000); // Asset 1: $50.00
 
     let trader = h.create_trader(1000_0000000);
@@ -233,13 +233,8 @@ fn test_small_position_minimum_collateral() {
     let trader = h.create_trader(500_0000000);
 
     // Minimum collateral (10 USDC) with minimum leverage (1x)
-    let pos_id = h.pm.open_position(
-        &trader,
-        &0_u32,
-        &Direction::Long,
-        &10_0000000_i128,
-        &1_u32,
-    );
+    let pos_id =
+        h.pm.open_position(&trader, &0_u32, &Direction::Long, &10_0000000_i128, &1_u32);
 
     let pos = h.pm.get_position(&trader, &pos_id);
     assert_eq!(pos.size, 10_0000000); // 10 * 1x
@@ -290,13 +285,8 @@ fn test_sequential_open_close_positions() {
 
     // Open and close 5 positions sequentially
     for i in 0..5 {
-        let pos_id = h.pm.open_position(
-            &trader,
-            &0_u32,
-            &Direction::Long,
-            &100_0000000_i128,
-            &5_u32,
-        );
+        let pos_id =
+            h.pm.open_position(&trader, &0_u32, &Direction::Long, &100_0000000_i128, &5_u32);
         assert_eq!(pos_id, (i + 1) as u64);
 
         h.pm.close_position(&trader, &pos_id, &0_u32);
@@ -308,13 +298,8 @@ fn test_sequential_open_close_positions() {
     assert_eq!(h.vault.get_locked_liquidity(), 0);
 
     // Position IDs should have incremented to 6
-    let next_pos = h.pm.open_position(
-        &trader,
-        &0_u32,
-        &Direction::Long,
-        &100_0000000_i128,
-        &5_u32,
-    );
+    let next_pos =
+        h.pm.open_position(&trader, &0_u32, &Direction::Long, &100_0000000_i128, &5_u32);
     assert_eq!(next_pos, 6);
 }
 
@@ -436,9 +421,7 @@ fn test_share_price_inflation_small_first_deposit() {
     // Simulate vault profit: trader opens and closes at a loss
     h.set_price(0, 1_000_0000000);
     let trader = h.create_trader(200_0000000);
-    h.pm.open_position(
-        &trader, &0_u32, &Direction::Long, &10_0000000_i128, &5_u32,
-    );
+    h.pm.open_position(&trader, &0_u32, &Direction::Long, &10_0000000_i128, &5_u32);
     h.set_price(0, 900_0000000); // -10% drop
     h.pm.close_position(&trader, &1_u64, &0_u32);
 
@@ -462,11 +445,14 @@ fn test_position_stores_asset() {
 
     let trader = h.create_trader(1000_0000000);
 
-    let pos0 = h.pm.open_position(
-        &trader, &0_u32, &Direction::Long, &100_0000000_i128, &5_u32,
-    );
+    let pos0 =
+        h.pm.open_position(&trader, &0_u32, &Direction::Long, &100_0000000_i128, &5_u32);
     let pos1 = h.pm.open_position(
-        &trader, &1_u32, &Direction::Short, &100_0000000_i128, &5_u32,
+        &trader,
+        &1_u32,
+        &Direction::Short,
+        &100_0000000_i128,
+        &5_u32,
     );
 
     let p0 = h.pm.get_position(&trader, &pos0);
@@ -491,9 +477,7 @@ fn test_vault_deposits_stay_consistent_after_trades() {
 
     // Open and close several positions, verify vault is always consistent
     for _ in 0..3 {
-        h.pm.open_position(
-            &trader, &0_u32, &Direction::Long, &50_0000000_i128, &5_u32,
-        );
+        h.pm.open_position(&trader, &0_u32, &Direction::Long, &50_0000000_i128, &5_u32);
     }
 
     // Close all at small profit
@@ -527,7 +511,11 @@ fn test_liquidate_wrong_asset() {
 
     // Open on asset 0
     h.pm.open_position(
-        &trader, &0_u32, &Direction::Long, &100_0000000_i128, &10_u32,
+        &trader,
+        &0_u32,
+        &Direction::Long,
+        &100_0000000_i128,
+        &10_u32,
     );
 
     // Make asset 1 crash (shouldn't affect asset 0 position)

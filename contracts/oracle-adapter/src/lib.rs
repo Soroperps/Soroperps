@@ -4,8 +4,7 @@
 mod test;
 
 use perps_types::{
-    CachedPrice, OracleCacheKey, OracleKey, PerpsError, INSTANCE_TTL_EXTEND,
-    INSTANCE_TTL_THRESHOLD,
+    CachedPrice, OracleCacheKey, OracleKey, PerpsError, INSTANCE_TTL_EXTEND, INSTANCE_TTL_THRESHOLD,
 };
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
@@ -107,12 +106,7 @@ impl OracleAdapterContract {
     /// Admin sets a price for an asset. This is the MVP approach.
     /// In production, this would be replaced by a Reflector cross-contract call.
     /// The `asset` is identified by a u32 index (e.g., 0=XLM, 1=BTC, 2=ETH).
-    pub fn set_price(
-        env: Env,
-        admin: Address,
-        asset: u32,
-        price: i128,
-    ) -> Result<(), PerpsError> {
+    pub fn set_price(env: Env, admin: Address, asset: u32, price: i128) -> Result<(), PerpsError> {
         storage::bump_instance(&env);
         admin.require_auth();
         let stored_admin = storage::get_admin(&env);
@@ -138,8 +132,7 @@ impl OracleAdapterContract {
     pub fn get_price(env: Env, asset: u32) -> Result<CachedPrice, PerpsError> {
         storage::bump_instance(&env);
 
-        let cached = storage::get_cached_price(&env, asset)
-            .ok_or(PerpsError::StalePrice)?;
+        let cached = storage::get_cached_price(&env, asset).ok_or(PerpsError::StalePrice)?;
 
         let threshold = storage::get_staleness_threshold(&env);
         let now = env.ledger().timestamp();

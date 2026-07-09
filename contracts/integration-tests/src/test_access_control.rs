@@ -120,8 +120,14 @@ fn test_pm_double_initialize() {
     let attacker = Address::generate(&h.env);
     let fake = Address::generate(&h.env);
     h.pm.initialize(
-        &attacker, &fake, &fake, &fake,
-        &10_u32, &10_u32, &30_u32, &10_0000000_i128,
+        &attacker,
+        &fake,
+        &fake,
+        &fake,
+        &10_u32,
+        &10_u32,
+        &30_u32,
+        &10_0000000_i128,
     );
 }
 
@@ -156,13 +162,8 @@ fn test_admin_can_update_config() {
     let trader = h.create_trader(500_0000000);
 
     // 50x leverage should now work (was 30x max before)
-    let pos_id = h.pm.open_position(
-        &trader,
-        &0_u32,
-        &Direction::Long,
-        &10_0000000_i128,
-        &50_u32,
-    );
+    let pos_id =
+        h.pm.open_position(&trader, &0_u32, &Direction::Long, &10_0000000_i128, &50_u32);
     let pos = h.pm.get_position(&trader, &pos_id);
     assert_eq!(pos.size, 500_0000000); // 10 * 50
 }

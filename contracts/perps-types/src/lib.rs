@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, contracterror, Address};
+use soroban_sdk::{contracterror, contracttype, Address};
 
 // ---------------------------------------------------------------------------
 // Vault storage keys

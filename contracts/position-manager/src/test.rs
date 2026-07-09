@@ -48,9 +48,9 @@ fn setup() -> TestSetup<'static> {
         &vault_address,
         &oracle_address,
         &usdc_address,
-        &10_u32,   // 0.1% open fee
-        &10_u32,   // 0.1% close fee
-        &30_u32,   // max 30x leverage
+        &10_u32,          // 0.1% open fee
+        &10_u32,          // 0.1% close fee
+        &30_u32,          // max 30x leverage
         &10_0000000_i128, // min 10 USDC collateral
     );
 
@@ -188,13 +188,7 @@ fn test_open_insufficient_collateral() {
     mint_usdc(&s.env, &s.usdc_address, &trader, 200_0000000);
 
     // 5 USDC < 10 USDC minimum
-    s.pm.open_position(
-        &trader,
-        &0_u32,
-        &Direction::Long,
-        &5_0000000_i128,
-        &10_u32,
-    );
+    s.pm.open_position(&trader, &0_u32, &Direction::Long, &5_0000000_i128, &10_u32);
 }
 
 #[test]

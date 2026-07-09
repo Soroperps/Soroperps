@@ -88,9 +88,7 @@ pub fn get_max_utilization(env: &Env) -> u32 {
 }
 
 pub fn set_position_manager(env: &Env, pm: &Address) {
-    env.storage()
-        .instance()
-        .set(&VaultKey::PositionManager, pm);
+    env.storage().instance().set(&VaultKey::PositionManager, pm);
 }
 
 pub fn get_position_manager(env: &Env) -> Address {

@@ -3,9 +3,7 @@
 #[cfg(test)]
 mod test;
 
-use perps_types::{
-    LiquidationKey, PerpsError, INSTANCE_TTL_EXTEND, INSTANCE_TTL_THRESHOLD,
-};
+use perps_types::{LiquidationKey, PerpsError, INSTANCE_TTL_EXTEND, INSTANCE_TTL_THRESHOLD};
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
 use perps_oracle_adapter::OracleAdapterContractClient;
@@ -25,9 +23,7 @@ mod storage {
     }
 
     pub fn set_admin(env: &Env, admin: &Address) {
-        env.storage()
-            .instance()
-            .set(&LiquidationKey::Admin, admin);
+        env.storage().instance().set(&LiquidationKey::Admin, admin);
     }
 
     pub fn get_admin(env: &Env) -> Address {
@@ -125,11 +121,7 @@ mod events {
         keeper_reward: i128,
     ) {
         env.events().publish(
-            (
-                Symbol::new(env, "liquidation"),
-                trader.clone(),
-                position_id,
-            ),
+            (Symbol::new(env, "liquidation"), trader.clone(), position_id),
             (
                 keeper.clone(),
                 mark_price,
@@ -337,11 +329,7 @@ impl LiquidationEngineContract {
     // Admin functions
     // -----------------------------------------------------------------------
 
-    pub fn set_maintenance_margin(
-        env: Env,
-        admin: Address,
-        bps: u32,
-    ) -> Result<(), PerpsError> {
+    pub fn set_maintenance_margin(env: Env, admin: Address, bps: u32) -> Result<(), PerpsError> {
         storage::bump_instance(&env);
         admin.require_auth();
         if admin != storage::get_admin(&env) {
@@ -354,11 +342,7 @@ impl LiquidationEngineContract {
         Ok(())
     }
 
-    pub fn set_liquidation_penalty(
-        env: Env,
-        admin: Address,
-        bps: u32,
-    ) -> Result<(), PerpsError> {
+    pub fn set_liquidation_penalty(env: Env, admin: Address, bps: u32) -> Result<(), PerpsError> {
         storage::bump_instance(&env);
         admin.require_auth();
         if admin != storage::get_admin(&env) {
@@ -368,11 +352,7 @@ impl LiquidationEngineContract {
         Ok(())
     }
 
-    pub fn set_keeper_reward(
-        env: Env,
-        admin: Address,
-        bps: u32,
-    ) -> Result<(), PerpsError> {
+    pub fn set_keeper_reward(env: Env, admin: Address, bps: u32) -> Result<(), PerpsError> {
         storage::bump_instance(&env);
         admin.require_auth();
         if admin != storage::get_admin(&env) {

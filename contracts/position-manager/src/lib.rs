@@ -31,8 +31,19 @@ mod events {
         fee: i128,
     ) {
         env.events().publish(
-            (Symbol::new(env, "position_opened"), trader.clone(), position_id),
-            (direction.clone(), size, collateral, entry_price, leverage, fee),
+            (
+                Symbol::new(env, "position_opened"),
+                trader.clone(),
+                position_id,
+            ),
+            (
+                direction.clone(),
+                size,
+                collateral,
+                entry_price,
+                leverage,
+                fee,
+            ),
         );
     }
 
@@ -45,7 +56,11 @@ mod events {
         fee: i128,
     ) {
         env.events().publish(
-            (Symbol::new(env, "position_closed"), trader.clone(), position_id),
+            (
+                Symbol::new(env, "position_closed"),
+                trader.clone(),
+                position_id,
+            ),
             (exit_price, realized_pnl, fee),
         );
     }
@@ -260,7 +275,14 @@ impl PositionManagerContract {
             storage::set_trader_position_count(&env, &trader, count - 1);
         }
 
-        events::emit_position_closed(&env, &trader, position_id, current_price, net_pnl, close_fee);
+        events::emit_position_closed(
+            &env,
+            &trader,
+            position_id,
+            current_price,
+            net_pnl,
+            close_fee,
+        );
 
         Ok(net_pnl)
     }
@@ -313,8 +335,7 @@ impl PositionManagerContract {
         caller.require_auth();
 
         // Only liquidation engine can call this
-        let le = storage::get_liquidation_engine(&env)
-            .ok_or(PerpsError::NotInitialized)?;
+        let le = storage::get_liquidation_engine(&env).ok_or(PerpsError::NotInitialized)?;
         if caller != le {
             return Err(PerpsError::Unauthorized);
         }

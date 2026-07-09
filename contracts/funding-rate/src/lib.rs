@@ -266,14 +266,7 @@ impl FundingRateContract {
         let oi_short = pm.get_open_interest_short();
 
         events::emit_funding_applied(
-            &env,
-            long_rate,
-            short_rate,
-            cum_long,
-            cum_short,
-            oi_long,
-            oi_short,
-            now,
+            &env, long_rate, short_rate, cum_long, cum_short, oi_long, oi_short, now,
         );
 
         Ok(())
@@ -302,11 +295,7 @@ impl FundingRateContract {
     // Admin functions
     // -----------------------------------------------------------------------
 
-    pub fn set_funding_interval(
-        env: Env,
-        admin: Address,
-        interval: u64,
-    ) -> Result<(), PerpsError> {
+    pub fn set_funding_interval(env: Env, admin: Address, interval: u64) -> Result<(), PerpsError> {
         storage::bump_instance(&env);
         admin.require_auth();
         if admin != storage::get_admin(&env) {
